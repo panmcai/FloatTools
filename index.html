@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浮点数格式转换工具</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --success-color: #2ecc71;
+            --float32-color: #3498db;
+            --float16-color: #2ecc71;
+            --bfloat16-color: #9b59b6;
+            --e5m2-color: #e67e22;
+            --e4m3-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .description {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .input-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: var(--light-color);
+            border-radius: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--secondary-color);
+            min-width: 100px;
+        }
+
+        input[type="text"] {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 250px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        select {
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            min-width: 250px;
+            transition: all 0.3s;
+        }
+
+        select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .format-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .format-layer {
+            display: grid;
+            gap: 25px;
+        }
+
+        .layer-1 {
+            grid-template-columns: 1fr;
+        }
+
+        .layer-2,
+        .layer-3 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .format-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 25px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .format-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+        }
+
+        .format-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .format-card.float32::before {
+            background: var(--float32-color);
+        }
+
+        .format-card.float16::before {
+            background: var(--float16-color);
+        }
+
+        .format-card.bfloat16::before {
+            background: var(--bfloat16-color);
+        }
+
+        .format-card.e5m2::before {
+            background: var(--e5m2-color);
+        }
+
+        .format-card.e4m3::before {
+            background: var(--e4m3-color);
+        }
+
+        .format-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .format-name {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--secondary-color);
+        }
+
+        .format-size {
+            font-size: 1rem;
+            color: #777;
+            background: #f3f3f3;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .format-bits {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 2px;
+            margin-bottom: 20px;
+            justify-content: center;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .bit {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .bit:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .bit.zero {
+            background: #e8f4fc;
+            color: var(--primary-color);
+        }
+
+        .bit.one {
+            background: #fce8e8;
+            color: var(--accent-color);
+        }
+
+        .bit.sign {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .bit.exponent {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .bit.mantissa {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+        }
+
+        .bit-labels {
+            display: flex;
+            justify-content: space-between;
+            margin: 25px 0 15px;
+            font-size: 0.9rem;
+            color: #777;
+            padding: 0 5px;
+        }
+
+        .bit-type {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .color-dot.sign {
+            background: #28a745;
+        }
+
+        .color-dot.exponent {
+            background: #ffc107;
+        }
+
+        .color-dot.mantissa {
+            background: #17a2b8;
+        }
+
+        .format-value {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: monospace;
+            font-size: 1.1rem;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .hex-value {
+            color: #2980b9;
+            font-weight: bold;
+        }
+
+        .dec-value {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .value-title {
+            font-weight: 600;
+            color: #777;
+            margin-right: 5px;
+        }
+
+        .section-title {
+            margin: 40px 0 20px;
+            color: var(--secondary-color);
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 992px) {
+
+            .layer-2,
+            .layer-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .input-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            input[type="text"],
+            select {
+                width: 100%;
+            }
+
+            .format-value {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .format-bits {
+                justify-content: flex-start;
+            }
+
+            .bit {
+                width: 24px;
+                height: 24px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 15px;
+            }
+
+            .format-bits {
+                gap: 1px;
+            }
+
+            .bit {
+                width: 22px;
+                height: 22px;
+                font-size: 0.75rem;
+            }
+
+            .format-value {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>浮点数格式转换工具</h1>
+            <p class="description">支持多种浮点格式转换，包括Float32、Float16、BFloat16、E5M2和E4M3。可直接点击bit位进行编辑，支持多种舍入模式。</p>
+        </header>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="valueInput">输入值:</label>
+                <input type="text" id="valueInput" placeholder="十进制、十六进制(0x)或二进制(0b)" value="0.15625">
+            </div>
+
+            <div class="input-group">
+                <label for="roundMode">舍入模式:</label>
+                <select id="roundMode">
+                    <option value="rn">rn (round to nearest even)</option>
+                    <option value="rz">rz (round to zero)</option>
+                    <option value="rd">rd (round down)</option>
+                    <option value="ru">ru (round up)</option>
+                </select>
+            </div>
+        </div>
+
+        <h2 class="section-title">浮点格式表示</h2>
+        <div class="format-layers">
+            <!-- 第一层: Float32 -->
+            <div class="format-layer layer-1">
+                <div class="format-card float32">
+                    <div class="format-header">
+                        <span class="format-name">Float32</span>
+                        <span class="format-size">32位 (1位符号, 8位指数, 23位尾数)</span>
+                    </div>
+                    <div class="format-bits" id="float32-bits"></div>
+                    <div class="bit-labels">
+                        <div class="bit-type"><span class="color-dot sign"></span> 符号位</div>
+                        <div class="bit-type"><span class="color-dot exponent"></span> 指数位 (8位)</div>
+                        <div class="bit-type"><span class="color-dot mantissa"></span> 尾数位 (23位)</div>
+                    </div>
+                    <div class="format-value">
+                        <div><span class="value-title">十六进制:</span> <span class="hex-value"
+                                id="float32-hex">0x3E200000</span></div>
+                        <div><span class="value-title">十进制:</span> <span class="dec-value"
+                                id="float32-dec">0.15625</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二层: Float16 和 BFloat16 -->
+            <div class="format-layer layer-2">
+                <div class="format-card float16">
+                    <div class="format-header">
+                        <span class="format-name">Float16 (Half)</span>
+                        <span class="format-size">16位 (1位符号, 5位指数, 10位尾数)</span>
+                    </div>
+                    <div class="format-bits" id="float16-bits"></div>
+                    <div class="bit-labels">
+                        <div class="bit-type"><span class="color-dot sign"></span> 符号位</div>
+                        <div class="bit-type"><span class="color-dot exponent"></span> 指数位 (5位)</div>
+                        <div class="bit-type"><span class="color-dot mantissa"></span> 尾数位 (10位)</div>
+                    </div>
+                    <div class="format-value">
+                        <div><span class="value-title">十六进制:</span> <span class="hex-value"
+                                id="float16-hex">0x3400</span></div>
+                        <div><span class="value-title">十进制:</span> <span class="dec-value"
+                                id="float16-dec">0.15625</span></div>
+                    </div>
+                </div>
+
+                <div class="format-card bfloat16">
+                    <div class="format-header">
+                        <span class="format-name">BFloat16</span>
+                        <span class="format-size">16位 (1位符号, 8位指数, 7位尾数)</span>
+                    </div>
+                    <div class="format-bits" id="bfloat16-bits"></div>
+                    <div class="bit-labels">
+                        <div class="bit-type"><span class="color-dot sign"></span> 符号位</div>
+                        <div class="bit-type"><span class="color-dot exponent"></span> 指数位 (8位)</div>
+                        <div class="bit-type"><span class="color-dot mantissa"></span> 尾数位 (7位)</div>
+                    </div>
+                    <div class="format-value">
+                        <div><span class="value-title">十六进制:</span> <span class="hex-value"
+                                id="bfloat16-hex">0x3E20</span></div>
+                        <div><span class="value-title">十进制:</span> <span class="dec-value"
+                                id="bfloat16-dec">0.15625</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第三层: E5M2 和 E4M3 -->
+            <div class="format-layer layer-3">
+                <div class="format-card e5m2">
+                    <div class="format-header">
+                        <span class="format-name">E5M2</span>
+                        <span class="format-size">8位 (1位符号, 5位指数, 2位尾数)</span>
+                    </div>
+                    <div class="format-bits" id="e5m2-bits"></div>
+                    <div class="bit-labels">
+                        <div class="bit-type"><span class="color-dot sign"></span> 符号位</div>
+                        <div class="bit-type"><span class="color-dot exponent"></span> 指数位 (5位)</div>
+                        <div class="bit-type"><span class="color-dot mantissa"></span> 尾数位 (2位)</div>
+                    </div>
+                    <div class="format-value">
+                        <div><span class="value-title">十六进制:</span> <span class="hex-value" id="e5m2-hex">0x2C</span>
+                        </div>
+                        <div><span class="value-title">十进制:</span> <span class="dec-value" id="e5m2-dec">0.15625</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="format-card e4m3">
+                    <div class="format-header">
+                        <span class="format-name">E4M3</span>
+                        <span class="format-size">8位 (1位符号, 4位指数, 3位尾数)</span>
+                    </div>
+                    <div class="format-bits" id="e4m3-bits"></div>
+                    <div class="bit-labels">
+                        <div class="bit-type"><span class="color-dot sign"></span> 符号位</div>
+                        <div class="bit-type"><span class="color-dot exponent"></span> 指数位 (4位)</div>
+                        <div class="bit-type"><span class="color-dot mantissa"></span> 尾数位 (3位)</div>
+                    </div>
+                    <div class="format-value">
+                        <div><span class="value-title">十六进制:</span> <span class="hex-value" id="e4m3-hex">0x2C</span>
+                        </div>
+                        <div><span class="value-title">十进制:</span> <span class="dec-value" id="e4m3-dec">0.15625</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 浮点格式定义
+        const FLOAT_FORMATS = {
+            float32: { name: 'Float32', size: 32, exponentBits: 8, mantissaBits: 23, bias: 127 },
+            float16: { name: 'Float16 (Half)', size: 16, exponentBits: 5, mantissaBits: 10, bias: 15 },
+            bfloat16: { name: 'BFloat16', size: 16, exponentBits: 8, mantissaBits: 7, bias: 127 },
+            e5m2: { name: 'E5M2', size: 8, exponentBits: 5, mantissaBits: 2, bias: 15 },
+            e4m3: { name: 'E4M3', size: 8, exponentBits: 4, mantissaBits: 3, bias: 7 }
+        };
+
+        // 当前位值存储
+        let currentBits = {
+            float32: '00111110001000000000000000000000', // 0.15625
+            float16: '0011010000000000', // 0.15625
+            bfloat16: '0011111000100000', // 0.15625
+            e5m2: '00101100', // 近似0.15625
+            e4m3: '00101100' // 近似0.15625
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeFormatCards();
+
+            // 添加输入框事件监听
+            document.getElementById('valueInput').addEventListener('input', function () {
+                convertInput();
+            });
+
+            // 添加舍入模式事件监听
+            document.getElementById('roundMode').addEventListener('change', function () {
+                convertInput();
+            });
+
+            // 初始转换
+            convertInput();
+        });
+
+        // 初始化格式卡片
+        function initializeFormatCards() {
+            for (const [key, format] of Object.entries(FLOAT_FORMATS)) {
+                updateBitDisplay(key, currentBits[key]);
+            }
+        }
+
+        // 更新位显示
+        function updateBitDisplay(format, bitString) {
+            const bitsContainer = document.getElementById(`${format}-bits`);
+            const formatInfo = FLOAT_FORMATS[format];
+            bitsContainer.innerHTML = '';
+
+            for (let i = 0; i < formatInfo.size; i++) {
+                const bit = document.createElement('div');
+                bit.className = `bit ${bitString[i] === '1' ? 'one' : 'zero'}`;
+
+                // 设置位类型样式
+                if (i === 0) {
+                    bit.classList.add('sign');
+                } else if (i <= formatInfo.exponentBits) {
+                    bit.classList.add('exponent');
+                } else {
+                    bit.classList.add('mantissa');
+                }
+
+                bit.textContent = bitString[i];
+                bit.addEventListener('click', () => toggleBit(format, i));
+                bitsContainer.appendChild(bit);
+            }
+
+            // 更新值显示
+            updateValueDisplay(format, bitString);
+        }
+
+        // 切换位值
+        function toggleBit(format, index) {
+            let bitString = currentBits[format];
+            const newBit = bitString[index] === '0' ? '1' : '0';
+            bitString = bitString.substring(0, index) + newBit + bitString.substring(index + 1);
+            currentBits[format] = bitString;
+
+            // 更新显示
+            updateBitDisplay(format, bitString);
+
+            // 从当前格式的值转换到其他格式
+            convertFromFormat(format);
+
+            // 更新输入框的值
+            updateInputValue(format);
+        }
+
+        // 更新输入框的值
+        function updateInputValue(format) {
+            const decimalValue = convertToDecimal(format, currentBits[format]);
+            if (!isNaN(decimalValue)) {
+                document.getElementById('valueInput').value = decimalValue;
+            }
+        }
+
+        // 更新值显示
+        function updateValueDisplay(format, bitString) {
+            // 转换为十六进制
+            let hexValue = '';
+            for (let i = 0; i < bitString.length; i += 4) {
+                const chunk = bitString.substr(i, 4);
+                hexValue += parseInt(chunk, 2).toString(16);
+            }
+
+            // 转换为十进制
+            const decimalValue = convertToDecimal(format, bitString);
+
+            // 更新显示
+            document.getElementById(`${format}-hex`).textContent = `0x${hexValue.toUpperCase()}`;
+
+            if (isNaN(decimalValue)) {
+                document.getElementById(`${format}-dec`).textContent = 'NaN';
+            } else if (!isFinite(decimalValue)) {
+                document.getElementById(`${format}-dec`).textContent = decimalValue > 0 ? '∞' : '-∞';
+            } else {
+                document.getElementById(`${format}-dec`).textContent = decimalValue.toString();
+            }
+        }
+
+        // 将二进制位转换为十进制值
+        function convertToDecimal(format, bitString) {
+            const formatInfo = FLOAT_FORMATS[format];
+            const sign = bitString[0] === '1' ? -1 : 1;
+
+            // 提取指数和尾数部分
+            const exponentBits = bitString.substring(1, 1 + formatInfo.exponentBits);
+            const mantissaBits = bitString.substring(1 + formatInfo.exponentBits);
+
+            // 计算指数和尾数值
+            const exponent = parseInt(exponentBits, 2) - formatInfo.bias;
+            const mantissa = calculateMantissa(mantissaBits);
+
+            // 处理特殊值
+            if (exponentBits === '1'.repeat(formatInfo.exponentBits)) {
+                return mantissa === 0 ? sign * Infinity : NaN;
+            }
+
+            // 正规数和非正规数
+            if (exponentBits !== '0'.repeat(formatInfo.exponentBits)) {
+                // 正规数
+                return sign * (1 + mantissa) * Math.pow(2, exponent);
+            } else {
+                // 非正规数
+                return sign * mantissa * Math.pow(2, 1 - formatInfo.bias);
+            }
+        }
+
+        // 计算尾数值
+        function calculateMantissa(bits) {
+            let value = 0;
+            for (let i = 0; i < bits.length; i++) {
+                if (bits[i] === '1') {
+                    value += Math.pow(2, - (i + 1));
+                }
+            }
+            return value;
+        }
+
+        // 转换输入值
+        function convertInput() {
+            const input = document.getElementById('valueInput').value.trim();
+            const roundMode = document.getElementById('roundMode').value;
+
+            if (!input) return;
+
+            let value;
+
+            // 解析输入值
+            if (input.startsWith('0x')) {
+                // 十六进制输入
+                value = parseInt(input, 16);
+            } else if (input.startsWith('0b')) {
+                // 二进制输入
+                value = parseInt(input.substring(2), 2);
+            } else {
+                // 十进制输入
+                value = parseFloat(input);
+            }
+
+            if (isNaN(value)) {
+                alert('请输入有效的数字');
+                return;
+            }
+
+            // 转换为所有格式
+            for (const format of Object.keys(FLOAT_FORMATS)) {
+                const bits = convertToBits(value, format, roundMode);
+                currentBits[format] = bits;
+                updateBitDisplay(format, bits);
+            }
+        }
+
+        // 从指定格式转换到其他格式
+        function convertFromFormat(sourceFormat) {
+            const roundMode = document.getElementById('roundMode').value;
+            const value = convertToDecimal(sourceFormat, currentBits[sourceFormat]);
+
+            if (isNaN(value)) {
+                // 如果是NaN，将所有格式设置为NaN表示
+                for (const format of Object.keys(FLOAT_FORMATS)) {
+                    if (format !== sourceFormat) {
+                        const formatInfo = FLOAT_FORMATS[format];
+                        // 设置NaN表示（指数全1，尾数非0）
+                        let nanBits = '0'.repeat(formatInfo.size);
+                        nanBits = setBitRange(nanBits, 1, 1 + formatInfo.exponentBits, '1');
+                        // 设置尾数部分为非0
+                        nanBits = setBit(nanBits, 1 + formatInfo.exponentBits, '1');
+                        currentBits[format] = nanBits;
+                        updateBitDisplay(format, nanBits);
+                    }
+                }
+            } else {
+                // 正常转换
+                for (const format of Object.keys(FLOAT_FORMATS)) {
+                    if (format !== sourceFormat) {
+                        const bits = convertToBits(value, format, roundMode);
+                        currentBits[format] = bits;
+                        updateBitDisplay(format, bits);
+                    }
+                }
+            }
+        }
+
+        // 将数值转换为指定位格式
+        function convertToBits(value, format, roundMode) {
+            const formatInfo = FLOAT_FORMATS[format];
+            const isNegative = value < 0;
+            const absValue = Math.abs(value);
+
+            // 处理特殊值
+            if (isNaN(value)) {
+                // NaN: 指数全1，尾数非0
+                let bits = '0'.repeat(formatInfo.size);
+                bits = setBitRange(bits, 1, 1 + formatInfo.exponentBits, '1');
+                bits = setBit(bits, 1 + formatInfo.exponentBits, '1'); // 设置一个尾数位为1
+                return bits;
+            }
+
+            if (!isFinite(value)) {
+                // 无穷大: 指数全1，尾数全0
+                let bits = isNegative ? '1' : '0';
+                bits += '1'.repeat(formatInfo.exponentBits);
+                bits += '0'.repeat(formatInfo.mantissaBits);
+                return bits;
+            }
+
+            if (absValue === 0) {
+                // 零: 全0
+                return '0'.repeat(formatInfo.size);
+            }
+
+            // 正常数值转换
+            // 这里简化处理，实际实现需要考虑舍入模式和浮点格式的精度限制
+
+            // 简单实现：转换为32位浮点数，然后截断/舍入到目标格式
+            const float32 = new Float32Array(1);
+            float32[0] = absValue;
+            const int32 = new Int32Array(float32.buffer)[0];
+
+            // 提取符号、指数和尾数
+            const signBit = isNegative ? '1' : '0';
+            let exponent = (int32 >> 23) & 0xFF;
+            let mantissa = int32 & 0x7FFFFF;
+
+            // 调整指数偏差
+            const newBias = formatInfo.bias;
+            const oldBias = 127;
+            exponent = exponent - oldBias + newBias;
+
+            // 处理指数溢出
+            if (exponent < 0) {
+                // 下溢，变为0或非正规数
+                exponent = 0;
+                // 简化处理，实际需要更复杂的舍入
+                mantissa = 0;
+            } else if (exponent > (1 << formatInfo.exponentBits) - 1) {
+                // 上溢，变为无穷大
+                exponent = (1 << formatInfo.exponentBits) - 1;
+                mantissa = 0;
+            }
+
+            // 舍入尾数
+            const mantissaShift = 23 - formatInfo.mantissaBits;
+            if (mantissaShift > 0) {
+                // 应用舍入模式
+                mantissa = roundMantissa(mantissa, mantissaShift, roundMode);
+            }
+
+            // 组合位
+            let exponentBits = exponent.toString(2).padStart(formatInfo.exponentBits, '0');
+            if (exponentBits.length > formatInfo.exponentBits) {
+                exponentBits = exponentBits.substring(0, formatInfo.exponentBits);
+            }
+
+            let mantissaBits = mantissa.toString(2).padStart(formatInfo.mantissaBits, '0');
+            if (mantissaBits.length > formatInfo.mantissaBits) {
+                mantissaBits = mantissaBits.substring(0, formatInfo.mantissaBits);
+            }
+
+            return signBit + exponentBits + mantissaBits;
+        }
+
+        // 舍入尾数
+        function roundMantissa(mantissa, shift, mode) {
+            // 简化实现，实际需要根据舍入模式进行精确舍入
+            return mantissa >> shift;
+        }
+
+        // 设置指定位范围的辅助函数
+        function setBitRange(bits, start, end, value) {
+            return bits.substring(0, start) + value.repeat(end - start) + bits.substring(end);
+        }
+
+        // 设置单个位的辅助函数
+        function setBit(bits, position, value) {
+            return bits.substring(0, position) + value + bits.substring(position + 1);
+        }
+    </script>
+</body>
+
+</html>
