@@ -1,57 +1,100 @@
-name: Deploy to Production
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
+     # 设置权限
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-        env:
-          NODE_ENV: production
-
-      - name: Build Docker image
-        run: |
-          docker build -t float-visualizer:${{ github.sha }} .
-          docker tag float-visualizer:${{ github.sha }} float-visualizer:latest
-
-      - name: Login to GitHub Container Registry
-        if: github.ref == 'refs/heads/main'
-        uses: docker/login-action@v3
+          node-version: '20'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          version: 9 # 指定 pnpm 版本，如 9.x (可选，推荐)
+          run_install: false # 我们将在下一步手动安装依赖
 
-      - name: Push Docker image
-        if: github.ref == 'refs/heads/main'
+      # 可选但推荐：配置 pnpm 缓存以加速构建
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
         run: |
-          docker tag float-visualizer:${{ github.sha }} ghcr.io/${{ github.repository }}:latest
-          docker tag float-visualizer:${{ github.sha }} ghcr.io/${{ github.repository }}:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository }}:latest
-          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      - name: Deploy to production (Optional)
-        if: github.ref == 'refs/heads/main'
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+        
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Build
+        run: pnpm run build
+
+      - name: Verify build output
         run: |
-          echo "Add your deployment commands here"
-          # Example: SSH to server and pull latest image
-          # ssh user@server "docker pull ghcr.io/${{ github.repository }}:latest && docker-compose up -d"
+          # 检查构建目录是否存在
+          if [ -d "dist" ]; then
+            echo "Build output found in dist/"
+          elif [ -d "build" ]; then
+            echo "Build output found in build/"
+          elif [ -d "out" ]; then
+            echo "Build output found in out/"
+          elif [ -d ".next" ]; then
+            echo "Build output found in .next/"
+          else
+            echo "ERROR: No build output directory found!"
+            ls -la
+            exit 1
+          fi
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          # 设置 GitHub Token
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # 构建输出目录（根据你的项目修改）
+          publish_dir: ./out
+          
+          # 可选：部署到特定分支
+          publish_branch: gh-pages  # 默认
+          
+          # 可选：保持部署历史
+          force_orphan: false
+          
+          # 可选：自定义提交信息
+          commit_message: ${{ github.event.head_commit.message || 'Deploy to GitHub Pages' }}
+          
+          # 可选：使用自定义域名
+          # cname: example.com
+          
