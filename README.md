@@ -26,8 +26,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/float-visualizer.git
-cd float-visualizer
+git clone https://github.com/panmcai/FloatVisualizer.git
+cd FloatVisualizer
 
 # 安装依赖
 npm install
@@ -42,10 +42,10 @@ npm run dev
 
 ```bash
 # 构建镜像
-docker build -t float-visualizer .
+docker build -t FloatVisualizer .
 
 # 运行容器
-docker run -d -p 3000:3000 --name float-visualizer float-visualizer
+docker run -d -p 3000:3000 --name FloatVisualizer FloatVisualizer
 ```
 
 访问 http://localhost:3000
@@ -143,4 +143,4 @@ MIT License
 
 ---
 
-Made with ❤️ by [你的名字]
+Made with ❤️ by panmcai
