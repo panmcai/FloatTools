@@ -31,12 +31,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9 # 指定 pnpm 版本，如 9.x (可选，推荐)
+          version: 10 # 指定 pnpm 版本，如 9.x (可选，推荐)
           run_install: false # 我们将在下一步手动安装依赖
 
       # 可选但推荐：配置 pnpm 缓存以加速构建
