@@ -1,6 +1,6 @@
 # 浮点数可视化工具
 
-一个现代化的浮点数可视化工具，支持 IEEE 754 标准格式和扩展格式。
+一个现代化的[浮点数可视化工具](https://panmcai.github.io/FloatVisualizer)，支持 IEEE 754 标准格式和扩展格式。
 
 ## 功能特性
 
