@@ -95,10 +95,10 @@ export default function FloatToyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-2 md:p-3">
-      <div className="max-w-[98vw] mx-auto h-screen flex flex-col">
-        {/* 标题栏 - 更紧凑 */}
-        <div className="flex items-center justify-between mb-3 shrink-0">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-6 md:p-8">
+      <div className="max-w-[85vw] mx-auto min-h-[90vh] flex flex-col">
+        {/* 标题栏 - 增加间距美化 */}
+        <div className="flex items-center justify-between mb-6 shrink-0">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
               浮点数可视化工具
@@ -110,8 +110,8 @@ export default function FloatToyPage() {
           </div>
         </div>
 
-        {/* 控制区域 - 更紧凑 */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 mb-3 border border-slate-700 shrink-0">
+        {/* 控制区域 - 增加间距美化 */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-slate-700 shrink-0">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
             {/* 格式选择器 */}
             <div className="lg:col-span-7">
@@ -152,12 +152,12 @@ export default function FloatToyPage() {
           </div>
         </div>
 
-        {/* 主内容区域 - 分两列 */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 min-h-0 flex-1">
+        {/* 主内容区域 - 分两列，对称布局 */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 min-h-0 flex-1 items-start">
           {/* 左侧：位可视化 */}
-          <div className="xl:col-span-2 bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700 overflow-hidden flex flex-col">
-            {/* 位显示区域 - 统一一行显示，更紧凑 */}
-            <div className="bg-slate-900/50 rounded-lg p-2 mb-3 overflow-x-auto shrink-0">
+          <div className="xl:col-span-2 bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 overflow-hidden flex flex-col">
+            {/* 位显示区域 - 优化比特位显示 */}
+            <div className="bg-slate-900/50 rounded-lg p-4 mb-4 overflow-x-auto shrink-0">
               <div className="flex items-center gap-1 min-w-max">
                 {/* 符号位区域 */}
                 <div className="flex flex-col items-center gap-0.5 px-2">
@@ -170,14 +170,14 @@ export default function FloatToyPage() {
                       <button
                         key={i}
                         onClick={() => toggleBit('sign', i)}
-                        className={`w-4 h-7 flex flex-col items-center justify-center rounded transition-all ${
+                        className={`w-5 h-8 flex flex-col items-center justify-center rounded transition-all ${
                           bit === '0'
                             ? 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
                             : 'bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30'
                         }`}
                       >
-                        <span className="text-[10px] font-mono font-bold leading-none">{bit}</span>
-                        <span className="text-[7px] text-slate-600 font-mono leading-none">
+                        <span className="text-[11px] font-mono font-bold leading-none">{bit}</span>
+                        <span className="text-[9px] text-slate-400 font-mono leading-none">
                           {getBitIndex('sign', i)}
                         </span>
                       </button>
@@ -186,7 +186,7 @@ export default function FloatToyPage() {
                 </div>
 
                 {/* 分隔线 */}
-                <div className="w-px h-7 bg-slate-700"></div>
+                <div className="w-px h-8 bg-slate-700"></div>
 
                 {/* 指数位区域 */}
                 <div className="flex flex-col items-center gap-0.5 px-2">
@@ -200,14 +200,14 @@ export default function FloatToyPage() {
                       <button
                         key={i}
                         onClick={() => toggleBit('exponent', i)}
-                        className={`w-4 h-7 flex flex-col items-center justify-center rounded transition-all ${
+                        className={`w-5 h-8 flex flex-col items-center justify-center rounded transition-all ${
                           bit === '0'
                             ? 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
                             : 'bg-blue-500/20 text-blue-400 border border-blue-500/50 hover:bg-blue-500/30'
                         }`}
                       >
-                        <span className="text-[10px] font-mono font-bold leading-none">{bit}</span>
-                        <span className="text-[7px] text-slate-600 font-mono leading-none">
+                        <span className="text-[11px] font-mono font-bold leading-none">{bit}</span>
+                        <span className="text-[9px] text-slate-400 font-mono leading-none">
                           {getBitIndex('exponent', i)}
                         </span>
                       </button>
@@ -216,10 +216,10 @@ export default function FloatToyPage() {
                 </div>
 
                 {/* 分隔线 */}
-                <div className="w-px h-7 bg-slate-700"></div>
+                <div className="w-px h-8 bg-slate-700"></div>
 
                 {/* 尾数位区域 */}
-                <div className="flex flex-col items-start gap-0.5 px-2 flex-1 min-w-0">
+                <div className="flex flex-col items-center gap-0.5 px-2 flex-1 min-w-0">
                   <div className="flex items-center gap-0.5 w-full">
                     <div className="w-1 h-1 rounded-full bg-green-500"></div>
                     <span className="text-[10px] text-slate-400 font-medium">尾数</span>
@@ -229,14 +229,14 @@ export default function FloatToyPage() {
                       <button
                         key={i}
                         onClick={() => toggleBit('mantissa', i)}
-                        className={`w-4 h-7 flex flex-col items-center justify-center rounded transition-all ${
+                        className={`w-5 h-8 flex flex-col items-center justify-center rounded transition-all ${
                           bit === '0'
                             ? 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
                             : 'bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30'
                         }`}
                       >
-                        <span className="text-[10px] font-mono font-bold leading-none">{bit}</span>
-                        <span className="text-[7px] text-slate-600 font-mono leading-none">
+                        <span className="text-[11px] font-mono font-bold leading-none">{bit}</span>
+                        <span className="text-[9px] text-slate-400 font-mono leading-none">
                           {getBitIndex('mantissa', i)}
                         </span>
                       </button>
@@ -344,9 +344,9 @@ export default function FloatToyPage() {
           </div>
 
           {/* 右侧：格式信息和快捷操作 */}
-          <div className="xl:col-span-1 space-y-3 flex flex-col min-h-0">
+          <div className="xl:col-span-1 space-y-4 flex flex-col min-h-0">
             {/* 格式信息 */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700 shrink-0">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shrink-0">
               <h3 className="text-xs md:text-sm font-semibold text-slate-300 mb-2">格式信息</h3>
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-900 rounded-lg p-2">
@@ -377,7 +377,7 @@ export default function FloatToyPage() {
             </div>
 
             {/* 快捷操作 */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700 shrink-0">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shrink-0">
               <h3 className="text-xs md:text-sm font-semibold text-slate-300 mb-2">快速操作</h3>
               <div className="grid grid-cols-5 gap-1.5">
                 {[
@@ -404,7 +404,7 @@ export default function FloatToyPage() {
             </div>
 
             {/* 状态信息 */}
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-slate-700 shrink-0">
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shrink-0">
               <h3 className="text-xs md:text-sm font-semibold text-slate-300 mb-2">状态</h3>
               <div className="space-y-1 text-[10px] md:text-xs">
                 <div className="flex justify-between">
