@@ -193,7 +193,6 @@ export default function FloatToyPage() {
                   <div className="flex items-center gap-0.5">
                     <div className="w-1 h-1 rounded-full bg-blue-500"></div>
                     <span className="text-[10px] text-slate-400 font-medium">指数</span>
-                    <span className="text-[8px] text-slate-600">偏置:{currentFormat.exponentBias}</span>
                   </div>
                   <div className="flex gap-0.5">
                     {exponent.split('').map((bit, i) => (
