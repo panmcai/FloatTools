@@ -26,7 +26,7 @@ export const FLOAT_FORMATS: Record<string, FloatFormat> = {
     exponentBias: 1023,
   },
   'fp16': {
-    name: 'Half',
+    name: 'Half (E5M10)',
     bits: 16,
     signBits: 1,
     exponentBits: 5,
@@ -42,7 +42,7 @@ export const FLOAT_FORMATS: Record<string, FloatFormat> = {
     exponentBias: 127,
   },
   'fp8_e4m3': {
-    name: 'FP8 E4M3',
+    name: 'FP8 Training (E4M3)',
     bits: 8,
     signBits: 1,
     exponentBits: 4,
@@ -50,7 +50,7 @@ export const FLOAT_FORMATS: Record<string, FloatFormat> = {
     exponentBias: 7,
   },
   'fp8_e5m2': {
-    name: 'FP8 E5M2',
+    name: 'FP8 Inference (E5M2)',
     bits: 8,
     signBits: 1,
     exponentBits: 5,
