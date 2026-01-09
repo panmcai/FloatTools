@@ -12,6 +12,7 @@ __pycache__/
 *.egg-info/
 /.env
 .env
+out/
 
 # JS/TS bundlers & build outputs
 .next
