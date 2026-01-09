@@ -170,14 +170,14 @@ export default function FloatToyPage() {
                       <button
                         key={i}
                         onClick={() => toggleBit('sign', i)}
-                        className={`w-5 h-8 flex flex-col items-center justify-center rounded transition-all ${
+                        className={`w-6 h-10 flex flex-col items-center justify-center rounded transition-all ${
                           bit === '0'
                             ? 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
                             : 'bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30'
                         }`}
                       >
-                        <span className="text-[11px] font-mono font-bold leading-none">{bit}</span>
-                        <span className="text-[9px] text-slate-400 font-mono leading-none">
+                        <span className="text-[12px] font-mono font-bold leading-none">{bit}</span>
+                        <span className="text-[10px] text-slate-400 font-mono leading-none">
                           {getBitIndex('sign', i)}
                         </span>
                       </button>
@@ -186,7 +186,7 @@ export default function FloatToyPage() {
                 </div>
 
                 {/* 分隔线 */}
-                <div className="w-px h-8 bg-slate-700"></div>
+                <div className="w-px h-10 bg-slate-700"></div>
 
                 {/* 指数位区域 */}
                 <div className="flex flex-col items-center gap-0.5 px-2">
@@ -200,14 +200,14 @@ export default function FloatToyPage() {
                       <button
                         key={i}
                         onClick={() => toggleBit('exponent', i)}
-                        className={`w-5 h-8 flex flex-col items-center justify-center rounded transition-all ${
+                        className={`w-6 h-10 flex flex-col items-center justify-center rounded transition-all ${
                           bit === '0'
                             ? 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
                             : 'bg-blue-500/20 text-blue-400 border border-blue-500/50 hover:bg-blue-500/30'
                         }`}
                       >
-                        <span className="text-[11px] font-mono font-bold leading-none">{bit}</span>
-                        <span className="text-[9px] text-slate-400 font-mono leading-none">
+                        <span className="text-[12px] font-mono font-bold leading-none">{bit}</span>
+                        <span className="text-[10px] text-slate-400 font-mono leading-none">
                           {getBitIndex('exponent', i)}
                         </span>
                       </button>
@@ -216,10 +216,10 @@ export default function FloatToyPage() {
                 </div>
 
                 {/* 分隔线 */}
-                <div className="w-px h-8 bg-slate-700"></div>
+                <div className="w-px h-10 bg-slate-700"></div>
 
                 {/* 尾数位区域 */}
-                <div className="flex flex-col items-center gap-0.5 px-2 flex-1 min-w-0">
+                <div className="flex flex-col items-start gap-0.5 px-2 flex-1 min-w-0">
                   <div className="flex items-center gap-0.5 w-full">
                     <div className="w-1 h-1 rounded-full bg-green-500"></div>
                     <span className="text-[10px] text-slate-400 font-medium">尾数</span>
@@ -229,14 +229,14 @@ export default function FloatToyPage() {
                       <button
                         key={i}
                         onClick={() => toggleBit('mantissa', i)}
-                        className={`w-5 h-8 flex flex-col items-center justify-center rounded transition-all ${
+                        className={`w-6 h-10 flex flex-col items-center justify-center rounded transition-all ${
                           bit === '0'
                             ? 'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300'
                             : 'bg-green-500/20 text-green-400 border border-green-500/50 hover:bg-green-500/30'
                         }`}
                       >
-                        <span className="text-[11px] font-mono font-bold leading-none">{bit}</span>
-                        <span className="text-[9px] text-slate-400 font-mono leading-none">
+                        <span className="text-[12px] font-mono font-bold leading-none">{bit}</span>
+                        <span className="text-[10px] text-slate-400 font-mono leading-none">
                           {getBitIndex('mantissa', i)}
                         </span>
                       </button>
