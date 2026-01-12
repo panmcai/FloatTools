@@ -16,6 +16,7 @@ export default function FloatToyPage() {
   const [decimalInput, setDecimalInput] = useState('1.5');
   const [hexInput, setHexInput] = useState('');
   const [isUserTyping, setIsUserTyping] = useState(false);
+  const [preserveDecimalInput, setPreserveDecimalInput] = useState(false);
 
   const currentFormat = FLOAT_FORMATS[format];
 
@@ -133,16 +134,30 @@ export default function FloatToyPage() {
     setParsed(result);
     // 更新十六进制输入框
     setHexInput(getHexRepresentation());
-    // 只有当不是用户输入时才更新decimalInput（避免覆盖用户输入）
-    if (!isUserTyping && !isNaN(value)) {
+    // 只有当不是用户输入且不需要保留时才更新decimalInput（避免覆盖用户输入）
+    if (!isUserTyping && !preserveDecimalInput && !isNaN(value)) {
       setDecimalInput(formatValue(value));
     }
-  }, [value, currentFormat, isUserTyping]);
+  }, [value, currentFormat, isUserTyping, preserveDecimalInput]);
 
   // 处理数值输入
   const handleValueChange = (newValue: string) => {
     setDecimalInput(newValue);
     setIsUserTyping(true);
+    setPreserveDecimalInput(false); // 用户开始新输入，不再保持之前的值
+  };
+
+  // 处理格式切换
+  const handleFormatChange = (newFormat: keyof typeof FLOAT_FORMATS) => {
+    setFormat(newFormat);
+    setIsUserTyping(false); // 重置用户输入标志
+    setPreserveDecimalInput(false); // 重置保留标志，允许更新输入框
+  };
+
+  // 处理快速操作按钮点击
+  const handleQuickValue = (newValue: number) => {
+    setValue(newValue);
+    setPreserveDecimalInput(false); // 快捷操作允许更新输入框
   };
 
   // 处理十进制输入框回车键
@@ -154,16 +169,19 @@ export default function FloatToyPage() {
       if (trimmed === 'inf' || trimmed === '+inf') {
         setValue(Infinity);
         setIsUserTyping(false);
+        setPreserveDecimalInput(true);
         return;
       }
       if (trimmed === '-inf') {
         setValue(-Infinity);
         setIsUserTyping(false);
+        setPreserveDecimalInput(true);
         return;
       }
       if (trimmed === 'nan') {
         setValue(NaN);
         setIsUserTyping(false);
+        setPreserveDecimalInput(true);
         return;
       }
       
@@ -171,6 +189,7 @@ export default function FloatToyPage() {
       if (trimmed === '') {
         setValue(0);
         setIsUserTyping(false);
+        setPreserveDecimalInput(true);
         return;
       }
       
@@ -178,6 +197,7 @@ export default function FloatToyPage() {
       if (!isNaN(num)) {
         setValue(num);
         setIsUserTyping(false);
+        setPreserveDecimalInput(true); // 保持用户的原始输入
       }
     }
   };
@@ -190,22 +210,26 @@ export default function FloatToyPage() {
     if (trimmed === 'inf' || trimmed === '+inf') {
       setValue(Infinity);
       setIsUserTyping(false);
+      setPreserveDecimalInput(true);
       return;
     }
     if (trimmed === '-inf') {
       setValue(-Infinity);
       setIsUserTyping(false);
+      setPreserveDecimalInput(true);
       return;
     }
     if (trimmed === 'nan') {
       setValue(NaN);
       setIsUserTyping(false);
+      setPreserveDecimalInput(true);
       return;
     }
     
     if (trimmed === '') {
       setValue(0);
       setIsUserTyping(false);
+      setPreserveDecimalInput(true);
       return;
     }
     
@@ -213,6 +237,7 @@ export default function FloatToyPage() {
     if (!isNaN(num)) {
       setValue(num);
       setIsUserTyping(false);
+      setPreserveDecimalInput(true); // 保持用户的原始输入
     }
   };
 
@@ -231,6 +256,7 @@ export default function FloatToyPage() {
     
     const newValue = buildFloatFromBits(newSign, newExp, newMantissa, currentFormat);
     setValue(newValue);
+    setPreserveDecimalInput(false); // 切换位时允许更新输入框
   };
 
   // 格式化数值显示
@@ -284,7 +310,7 @@ export default function FloatToyPage() {
                 {(Object.entries(FLOAT_FORMATS) as [keyof typeof FLOAT_FORMATS, FloatFormat][]).map(([key, fmt]) => (
                   <button
                     key={key}
-                    onClick={() => setFormat(key)}
+                    onClick={() => handleFormatChange(key)}
                     className={`px-2 py-1 rounded text-xs md:text-sm font-medium transition-all flex-shrink-0 ${
                       format === key
                         ? 'bg-blue-600 text-white'
@@ -566,7 +592,7 @@ export default function FloatToyPage() {
                 ].map((btn) => (
                   <button
                     key={btn.label}
-                    onClick={() => setValue(btn.value)}
+                    onClick={() => handleQuickValue(btn.value)}
                     className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded font-mono text-[10px] md:text-xs transition-all"
                   >
                     {btn.label}
