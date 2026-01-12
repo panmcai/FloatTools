@@ -122,12 +122,20 @@ export function parseFloatToBits(value: number, format: FloatFormat): {
     isDenormalized = true;
     isNormalized = false;
   } else if (exponentInt === allOnesExponent) {
-    if (mantissaInt === 0) {
+    // FP8 E4M3 扩展模式：仅当指数全1且尾数为0时判断为Infinity
+    if (format.exponentBits === 4 && format.mantissaBits === 3) {
+      if (mantissaInt === 0) {
+        isInfinity = true;
+        isNormalized = false;
+      }
+      // 否则，在扩展模式下视为规格化数（指数可以是 15）
+    } else if (mantissaInt === 0) {
       isInfinity = true;
+      isNormalized = false;
     } else {
       isNaN = true;
+      isNormalized = false;
     }
-    isNormalized = false;
   }
 
   return {
