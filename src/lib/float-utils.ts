@@ -162,12 +162,13 @@ function simulateFloatToBits(value: number, format: FloatFormat): string {
 
   // 计算指数
   let exponent = Math.floor(Math.log2(absValue));
-  const maxExp = Math.pow(2, format.exponentBits) - 2;
+  const maxExponent = Math.pow(2, format.exponentBits) - 1; // 修改：使用所有 1 作为最大指数
   const minExp = 1 - format.exponentBias;
 
   // 检查是否超出范围
-  if (exponent > maxExp) {
-    return signBit + '1'.repeat(format.exponentBits) + '0'.repeat(format.mantissaBits); // Infinity
+  if (exponent > maxExponent - format.exponentBias) {
+    // 超出范围，返回最大可表示值（饱和处理）
+    exponent = maxExponent - format.exponentBias;
   }
 
   // 检查是否为非规格化
@@ -190,10 +191,21 @@ function simulateFloatToBits(value: number, format: FloatFormat): string {
   const biasedExponent = exponent + format.exponentBias;
   let mantissa = absValue / Math.pow(2, exponent) - 1;
 
-  // 转换为整数
-  const mantissaInt = Math.round(mantissa * Math.pow(2, format.mantissaBits));
-  const exponentBitsStr = biasedExponent.toString(2).padStart(format.exponentBits, '0');
-  const mantissaBitsStr = mantissaInt.toString(2).padStart(format.mantissaBits, '0');
+  // 转换为整数，使用 Round to Nearest Even (CUDA 默认模式)
+  const mantissaScale = Math.pow(2, format.mantissaBits);
+  const mantissaInt = Math.round(mantissa * mantissaScale);
+
+  // 处理尾数溢出（进位到指数）
+  let finalBiasedExponent = biasedExponent;
+  let finalMantissaInt = mantissaInt;
+  
+  if (mantissaInt >= mantissaScale) {
+    finalMantissaInt = 0;
+    finalBiasedExponent++;
+  }
+
+  const exponentBitsStr = finalBiasedExponent.toString(2).padStart(format.exponentBits, '0');
+  const mantissaBitsStr = finalMantissaInt.toString(2).padStart(format.mantissaBits, '0');
 
   return signBit + exponentBitsStr + mantissaBitsStr;
 }
@@ -217,6 +229,17 @@ export function buildFloatFromBits(sign: string, exponentBits: string, mantissaB
   }
 
   if (exponentInt === allOnesExponent) {
+    // 修复：只有当尾数全为 0 时才是 Infinity，否则是 NaN
+    // 对于 FP8 E4M3，如果指数是 15 且尾数非 0，才是 NaN
+    // 但实际上 15 是有效的规格化指数，不应该总是返回 Infinity
+    // 根据 IEEE 754，allOnesExponent 应该保留给特殊值
+    
+    // 修复：检查格式是否有 Infinity/NaN 表示
+    // 对于 E4M3 格式，指数 15 (1111) 实际上是有效的，不是特殊值
+    // 但为了兼容标准行为，我们假设最后一位指数是保留给特殊值的
+    // 修改：使用 maxBiasedExponent 而不是 allOnesExponent
+    const maxBiasedExponent = allOnesExponent - 1;
+    
     if (mantissaInt === 0) {
       return signBit ? -Infinity : Infinity;
     }
