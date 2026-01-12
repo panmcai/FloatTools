@@ -15,6 +15,7 @@ export default function FloatToyPage() {
   // 输入框状态
   const [decimalInput, setDecimalInput] = useState('1.5');
   const [hexInput, setHexInput] = useState('');
+  const [isUserTyping, setIsUserTyping] = useState(false);
 
   const currentFormat = FLOAT_FORMATS[format];
 
@@ -37,10 +38,58 @@ export default function FloatToyPage() {
   // 从十六进制转换为浮点数
   const handleHexChange = (hexStr: string) => {
     setHexInput(hexStr);
-    const trimmed = hexStr.trim();
+    setIsUserTyping(true);
+  };
+
+  // 处理十六进制输入框回车键
+  const handleHexKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const trimmed = hexInput.trim();
+      
+      if (trimmed === '') {
+        setValue(0);
+        setIsUserTyping(false);
+        return;
+      }
+      
+      try {
+        const cleanHex = trimmed.replace(/^0x/i, '');
+        if (/^[0-9A-Fa-f]+$/.test(cleanHex)) {
+          let binaryStr = '';
+          let decimalValue = parseInt(cleanHex, 16);
+          
+          if (currentFormat.bits === 32) {
+            binaryStr = decimalValue.toString(2).padStart(32, '0');
+          } else if (currentFormat.bits === 64) {
+            binaryStr = decimalValue.toString(2).padStart(64, '0');
+          } else {
+            const hexDigits = Math.ceil(currentFormat.bits / 4);
+            decimalValue = parseInt(cleanHex.substring(0, hexDigits), 16);
+            binaryStr = decimalValue.toString(2).padStart(currentFormat.bits, '0');
+          }
+          
+          if (binaryStr.length > 0) {
+            const newSign = binaryStr.substring(0, currentFormat.signBits);
+            const newExp = binaryStr.substring(currentFormat.signBits, currentFormat.signBits + currentFormat.exponentBits);
+            const newMantissa = binaryStr.substring(currentFormat.signBits + currentFormat.exponentBits);
+            const newValue = buildFloatFromBits(newSign, newExp, newMantissa, currentFormat);
+            setValue(newValue);
+            setIsUserTyping(false);
+          }
+        }
+      } catch (e) {
+        // 无效的十六进制输入，忽略
+      }
+    }
+  };
+
+  // 处理十六进制输入框失去焦点
+  const handleHexBlur = () => {
+    const trimmed = hexInput.trim();
     
     if (trimmed === '') {
       setValue(0);
+      setIsUserTyping(false);
       return;
     }
     
@@ -66,6 +115,7 @@ export default function FloatToyPage() {
           const newMantissa = binaryStr.substring(currentFormat.signBits + currentFormat.exponentBits);
           const newValue = buildFloatFromBits(newSign, newExp, newMantissa, currentFormat);
           setValue(newValue);
+          setIsUserTyping(false);
         }
       }
     } catch (e) {
@@ -83,41 +133,86 @@ export default function FloatToyPage() {
     setParsed(result);
     // 更新十六进制输入框
     setHexInput(getHexRepresentation());
-    // 只有当不是用户输入时才更新decimalInput（避免循环更新）
-    if (!isNaN(value)) {
+    // 只有当不是用户输入时才更新decimalInput（避免覆盖用户输入）
+    if (!isUserTyping && !isNaN(value)) {
       setDecimalInput(formatValue(value));
     }
-  }, [value, currentFormat]);
+  }, [value, currentFormat, isUserTyping]);
 
   // 处理数值输入
   const handleValueChange = (newValue: string) => {
     setDecimalInput(newValue);
+    setIsUserTyping(true);
+  };
+
+  // 处理十进制输入框回车键
+  const handleDecimalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const trimmed = decimalInput.trim().toLowerCase();
+      
+      // 处理特殊值
+      if (trimmed === 'inf' || trimmed === '+inf') {
+        setValue(Infinity);
+        setIsUserTyping(false);
+        return;
+      }
+      if (trimmed === '-inf') {
+        setValue(-Infinity);
+        setIsUserTyping(false);
+        return;
+      }
+      if (trimmed === 'nan') {
+        setValue(NaN);
+        setIsUserTyping(false);
+        return;
+      }
+      
+      // 处理空字符串
+      if (trimmed === '') {
+        setValue(0);
+        setIsUserTyping(false);
+        return;
+      }
+      
+      const num = parseFloat(decimalInput);
+      if (!isNaN(num)) {
+        setValue(num);
+        setIsUserTyping(false);
+      }
+    }
+  };
+
+  // 处理十进制输入框失去焦点
+  const handleDecimalBlur = () => {
+    // 失去焦点时也执行转换
+    const trimmed = decimalInput.trim().toLowerCase();
     
-    const trimmed = newValue.trim().toLowerCase();
-    
-    // 处理特殊值
     if (trimmed === 'inf' || trimmed === '+inf') {
       setValue(Infinity);
+      setIsUserTyping(false);
       return;
     }
     if (trimmed === '-inf') {
       setValue(-Infinity);
+      setIsUserTyping(false);
       return;
     }
     if (trimmed === 'nan') {
       setValue(NaN);
+      setIsUserTyping(false);
       return;
     }
     
-    // 处理空字符串
     if (trimmed === '') {
       setValue(0);
+      setIsUserTyping(false);
       return;
     }
     
-    const num = parseFloat(newValue);
+    const num = parseFloat(decimalInput);
     if (!isNaN(num)) {
       setValue(num);
+      setIsUserTyping(false);
     }
   };
 
@@ -210,15 +305,19 @@ export default function FloatToyPage() {
                   type="text"
                   value={decimalInput}
                   onChange={(e) => handleValueChange(e.target.value)}
+                  onKeyDown={handleDecimalKeyDown}
+                  onBlur={handleDecimalBlur}
                   className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs md:text-sm font-mono focus:outline-none focus:border-blue-500"
-                  placeholder="输入数值"
+                  placeholder="输入数值 (按回车转换)"
                 />
                 <input
                   type="text"
                   value={hexInput}
                   onChange={(e) => handleHexChange(e.target.value)}
+                  onKeyDown={handleHexKeyDown}
+                  onBlur={handleHexBlur}
                   className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs md:text-sm font-mono focus:outline-none focus:border-blue-500"
-                  placeholder="十六进制"
+                  placeholder="十六进制 (按回车转换)"
                 />
               </div>
             </div>
