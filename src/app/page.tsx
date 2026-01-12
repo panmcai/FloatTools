@@ -225,6 +225,47 @@ export default function FloatToyPage() {
     setPreserveDecimalInput(false); // 快捷操作允许更新输入框
   };
 
+  // 处理快速运算单元的一元操作
+  const handleUnaryOperation = (operation: string) => {
+    const currentValue = value;
+    let result: number;
+
+    switch (operation) {
+      case 'sqrt':
+        result = Math.sqrt(currentValue);
+        break;
+      case 'cbrt':
+        result = Math.cbrt(currentValue);
+        break;
+      case 'square':
+        result = currentValue * currentValue;
+        break;
+      case 'cube':
+        result = currentValue * currentValue * currentValue;
+        break;
+      case 'reciprocal':
+        result = 1 / currentValue;
+        break;
+      case 'abs':
+        result = Math.abs(currentValue);
+        break;
+      case 'negate':
+        result = -currentValue;
+        break;
+      case 'log2':
+        result = Math.log2(currentValue);
+        break;
+      case 'ln':
+        result = Math.log(currentValue);
+        break;
+      default:
+        result = currentValue;
+    }
+
+    setValue(result);
+    setPreserveDecimalInput(false); // 运算操作允许更新输入框
+  };
+
   // 处理十进制输入框回车键
   const handleDecimalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -424,6 +465,7 @@ export default function FloatToyPage() {
           <div className="xl:col-span-2 bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 overflow-hidden flex flex-col">
             {/* 位显示区域 - 优化比特位显示 */}
             <div className="bg-slate-900/50 rounded-lg p-4 mb-4 overflow-x-auto shrink-0">
+              {/* 浮点数格式：显示符号位、指数位、尾数位 */}
               <div className="flex items-center gap-1 min-w-max">
                 {/* 符号位区域 */}
                 <div className="flex flex-col items-center gap-0.5 px-2">
@@ -512,7 +554,7 @@ export default function FloatToyPage() {
               </div>
             </div>
 
-            {/* 数学公式和换算过程 - 规格化数、非规格化数和零都显示 */}
+            {/* 数学公式和换算过程 - 仅针对浮点数格式，规格化数、非规格化数和零都显示 */}
             {parsed && (parsed.isNormalized || parsed.isDenormalized || parsed.isZero) && (
               <>
                 {/* 数学表示 - 区分规格化数和非规格化数 */}
@@ -607,12 +649,12 @@ export default function FloatToyPage() {
             )}
 
             {/* 特殊值提示 - 只显示无穷大和NaN */}
-            {parsed && (parsed.isInfinity || parsed.isNaN) && (
+            {parsed && (parsed.isInfinity || parsed.isNan) && (
               <div className="bg-slate-900/50 rounded-lg p-2 text-xs md:text-sm">
                 <div className="text-slate-400 mb-1 font-medium">特殊值</div>
                 <div className="text-center text-xs md:text-sm">
                   {parsed.isInfinity && <span className="text-orange-400">无穷大 (Infinity)</span>}
-                  {parsed.isNaN && <span className="text-red-400">非数字 (NaN)</span>}
+                  {parsed.isNan && <span className="text-red-400">非数字 (NaN)</span>}
                 </div>
               </div>
             )}
@@ -678,6 +720,76 @@ export default function FloatToyPage() {
               </div>
             </div>
 
+            {/* 快速运算单元 */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shrink-0">
+              <h3 className="text-xs md:text-sm font-semibold text-slate-300 mb-2">快速运算</h3>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  onClick={() => handleUnaryOperation('sqrt')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="开根号"
+                >
+                  √x
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('cbrt')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="开立方根"
+                >
+                  ³√x
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('square')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="平方"
+                >
+                  x²
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('cube')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="立方"
+                >
+                  x³
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('reciprocal')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="倒数"
+                >
+                  1/x
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('abs')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="绝对值"
+                >
+                  |x|
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('negate')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="取反"
+                >
+                  -x
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('log2')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="以2为底的对数"
+                >
+                  log₂x
+                </button>
+                <button
+                  onClick={() => handleUnaryOperation('ln')}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-500 rounded font-mono text-[10px] md:text-xs transition-all"
+                  title="自然对数"
+                >
+                  lnx
+                </button>
+              </div>
+            </div>
+
             {/* 状态信息 */}
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-700 shrink-0">
               <h3 className="text-xs md:text-sm font-semibold text-slate-300 mb-2">状态</h3>
@@ -694,13 +806,13 @@ export default function FloatToyPage() {
                       <span className="text-slate-500">类型:</span>
                       <span className={
                         parsed.isInfinity ? 'text-orange-400' :
-                        parsed.isNaN ? 'text-red-400' :
+                        parsed.isNan ? 'text-red-400' :
                         parsed.isZero ? 'text-slate-400' :
                         parsed.isDenormalized ? 'text-yellow-400' :
                         'text-green-400'
                       }>
                         {parsed.isInfinity ? '无穷大' :
-                         parsed.isNaN ? 'NaN' :
+                         parsed.isNan ? 'NaN' :
                          parsed.isZero ? '零' :
                          parsed.isDenormalized ? '非规格化' :
                          '规格化'}
