@@ -122,17 +122,18 @@ export function parseFloatToBits(value: number, format: FloatFormat): {
     isDenormalized = true;
     isNormalized = false;
   } else if (exponentInt === allOnesExponent) {
-    // FP8 E4M3 扩展模式：仅当指数全1且尾数为0时判断为Infinity
-    if (format.exponentBits === 4 && format.mantissaBits === 3) {
-      if (mantissaInt === 0) {
-        isInfinity = true;
-        isNormalized = false;
-      }
-      // 否则，在扩展模式下视为规格化数（指数可以是 15）
+    // FP8 E4M3 和 FP4 E2M1 扩展模式：不支持 INF/NaN，所有位组合都是有效值
+    if ((format.exponentBits === 4 && format.mantissaBits === 3) ||
+        (format.exponentBits === 2 && format.mantissaBits === 1)) {
+      // 扩展模式：视为规格化数，指数可以是最大值（FP8: 15, FP4: 3）
+      // 不判断为 INF 或 NaN
+      isNormalized = true;
     } else if (mantissaInt === 0) {
+      // 标准格式：判断为 Infinity
       isInfinity = true;
       isNormalized = false;
     } else {
+      // 标准格式：判断为 NaN
       isNaN = true;
       isNormalized = false;
     }
@@ -168,13 +169,18 @@ function simulateFloatToBits(value: number, format: FloatFormat): string {
     return signBit + allOnes + (isNaN(value) ? '1' : '0').repeat(format.mantissaBits);
   }
 
-  // FP8 E4M3 特殊处理：扩展指数范围至 1-15
+  // FP8 E4M3 和 FP4 E2M1 特殊处理：扩展指数范围，不支持 INF/NaN
   let maxExp: number;
   let minExp: number;
 
   if (format.exponentBits === 4 && format.mantissaBits === 3) {
     // FP8 E4M3: 扩展模式，指数范围 1-15（支持 [-480, 480]）
     maxExp = 15;
+    minExp = 1 - format.exponentBias;
+  } else if (format.exponentBits === 2 && format.mantissaBits === 1) {
+    // FP4 E2M1: 不支持 INF/NaN，所有位组合都是有效值
+    // 指数范围：00, 01, 10, 11 都是规格化数
+    maxExp = Math.pow(2, format.exponentBits) - 1; // 11 = 3
     minExp = 1 - format.exponentBias;
   } else {
     // 其他格式：标准 IEEE 754
@@ -188,10 +194,12 @@ function simulateFloatToBits(value: number, format: FloatFormat): string {
   // 检查是否超出范围
   if (exponent > maxExp) {
     const allOnes = '1'.repeat(format.exponentBits);
-    // FP8 E4M3 扩展模式：即使指数超出 15，也不返回 Infinity，而是继续处理
-    if (format.exponentBits === 4 && format.mantissaBits === 3) {
-      // 限制指数到最大值
-      exponent = maxExp;
+    // FP8 E4M3 和 FP4 E2M1 扩展模式：不支持 INF/NaN，限制到最大值
+    if ((format.exponentBits === 4 && format.mantissaBits === 3) ||
+        (format.exponentBits === 2 && format.mantissaBits === 1)) {
+      // 返回最大值的位表示：符号位 + 指数全1 + 尾数全1
+      const allMantissa = '1'.repeat(format.mantissaBits);
+      return signBit + allOnes + allMantissa;
     } else {
       return signBit + allOnes + '0'.repeat(format.mantissaBits); // Infinity
     }
@@ -233,12 +241,25 @@ function simulateFloatToBits(value: number, format: FloatFormat): string {
   if (mantissaInt >= mantissaScale) {
     mantissaInt = 0;
     const newBiasedExponent = biasedExponent + 1;
-    const newMaxExp = format.exponentBits === 4 && format.mantissaBits === 3 ? 15 : Math.pow(2, format.exponentBits) - 1;
-    
+    // FP8 E4M3 和 FP4 E2M1 扩展模式：支持更大的指数范围
+    const newMaxExp = (format.exponentBits === 4 && format.mantissaBits === 3) ||
+                     (format.exponentBits === 2 && format.mantissaBits === 1)
+                     ? Math.pow(2, format.exponentBits) - 1
+                     : Math.pow(2, format.exponentBits) - 2;
+
     if (newBiasedExponent >= newMaxExp) {
       // 指数溢出
-      const allOnes = '1'.repeat(format.exponentBits);
-      return signBit + allOnes + '0'.repeat(format.mantissaBits);
+      if ((format.exponentBits === 4 && format.mantissaBits === 3) ||
+          (format.exponentBits === 2 && format.mantissaBits === 1)) {
+        // FP8 E4M3 和 FP4 E2M1：限制到最大值，而不是返回 INF
+        const allOnes = '1'.repeat(format.exponentBits);
+        const allMantissa = '1'.repeat(format.mantissaBits);
+        return signBit + allOnes + allMantissa;
+      } else {
+        // 标准格式：返回 INF
+        const allOnes = '1'.repeat(format.exponentBits);
+        return signBit + allOnes + '0'.repeat(format.mantissaBits);
+      }
     }
   }
 
@@ -266,12 +287,11 @@ export function buildFloatFromBits(sign: string, exponentBits: string, mantissaB
     return signBit ? -value : value;
   }
 
-  // FP8 E4M3 特殊处理：仅当指数全1且尾数为0时判断为Infinity
-  if (format.exponentBits === 4 && format.mantissaBits === 3) {
-    if (exponentInt === allOnesExponent && mantissaInt === 0) {
-      return signBit ? -Infinity : Infinity;
-    }
-    // 即使指数全1，如果尾数不为0，在扩展模式下也视为规格化数
+  // FP8 E4M3 和 FP4 E2M1 特殊处理：不支持 INF/NaN，所有位组合都是有效值
+  if ((format.exponentBits === 4 && format.mantissaBits === 3) ||
+      (format.exponentBits === 2 && format.mantissaBits === 1)) {
+    // 扩展模式：即使指数全1，也视为规格化数
+    // 不判断为 INF 或 NaN
   } else if (exponentInt === allOnesExponent) {
     if (mantissaInt === 0) {
       return signBit ? -Infinity : Infinity;
