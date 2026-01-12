@@ -11,23 +11,54 @@ export default function FloatToyPage() {
   const [exponent, setExponent] = useState('');
   const [mantissa, setMantissa] = useState('');
   const [parsed, setParsed] = useState<any>(null);
-  
+
+  // 为每个格式保存独立的数值状态
+  const [formatValues, setFormatValues] = useState<Record<keyof typeof FLOAT_FORMATS, number>>({
+    fp32: 1.5,
+    fp64: 1.5,
+    fp16: 1.5,
+    bf16: 1.5,
+    fp8_e4m3: 1.5,
+    fp8_e5m2: 1.5,
+    fp4_e2m1: 1.5,
+  });
+
   // 输入框状态
   const [decimalInput, setDecimalInput] = useState('1.5');
   const [hexInput, setHexInput] = useState('');
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [preserveDecimalInput, setPreserveDecimalInput] = useState(false);
   const isFormatSwitchingRef = useRef(false);
-  
+
   // 使用 ref 存储最新的 value 和 format，避免闭包问题
   const valueRef = useRef(value);
   const formatRef = useRef(format);
-  
+
   // 更新 ref
   useEffect(() => {
     valueRef.current = value;
     formatRef.current = format;
   }, [value, format]);
+
+  // 当 value 变化时，自动转换并更新所有格式的值
+  useEffect(() => {
+    if (!isFormatSwitchingRef.current) {
+      // 广播转换：为所有格式计算转换后的值
+      const newFormatValues = { ...formatValues };
+      Object.keys(FLOAT_FORMATS).forEach((formatKey: keyof typeof FLOAT_FORMATS) => {
+        const formatConfig = FLOAT_FORMATS[formatKey];
+        const result = parseFloatToBits(value, formatConfig);
+        const convertedValue = buildFloatFromBits(
+          result.sign,
+          result.exponent,
+          result.mantissa,
+          formatConfig
+        );
+        newFormatValues[formatKey] = convertedValue;
+      });
+      setFormatValues(newFormatValues);
+    }
+  }, [value]);
 
   const currentFormat = FLOAT_FORMATS[format];
 
@@ -173,28 +204,13 @@ export default function FloatToyPage() {
     setIsUserTyping(false);
     setPreserveDecimalInput(false);
 
-    // 获取当前格式的位表示
-    const currentParsed = parsed || parseFloatToBits(value, currentFormat);
-
-    // 将当前位表示转换为新格式的浮点数值
-    // 关键：用当前格式的位表示，直接转换为新格式的位，然后用新格式解析
-    const newFormatConfig = FLOAT_FORMATS[newFormat];
-
-    // 直接从当前 value 转换到新格式，让 parseFloatToBits 处理精度转换
-    const newValueInNewFormat = parseFloatToBits(value, newFormatConfig);
-
-    // 用新格式的位表示构建数值
-    const newValue = buildFloatFromBits(
-      newValueInNewFormat.sign,
-      newValueInNewFormat.exponent,
-      newValueInNewFormat.mantissa,
-      newFormatConfig
-    );
+    // 直接使用 formatValues 中已经转换好的值
+    const newValue = formatValues[newFormat];
 
     // 设置 format，触发 useEffect
     setFormat(newFormat);
 
-    // 同时设置 value，确保 useEffect 能够使用正确的值
+    // 同时设置 value
     setValue(newValue);
 
     // 延迟清除格式切换标志，确保 useEffect 执行完成
