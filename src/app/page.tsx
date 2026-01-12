@@ -11,8 +11,67 @@ export default function FloatToyPage() {
   const [exponent, setExponent] = useState('');
   const [mantissa, setMantissa] = useState('');
   const [parsed, setParsed] = useState<any>(null);
+  
+  // 输入框状态
+  const [decimalInput, setDecimalInput] = useState('1.5');
+  const [hexInput, setHexInput] = useState('');
 
   const currentFormat = FLOAT_FORMATS[format];
+
+  // 获取数值的十六进制表示
+  const getHexRepresentation = (): string => {
+    const decimalValue = parseInt(bits, 2);
+    if (currentFormat.bits === 32) {
+      return '0x' + decimalValue.toString(16).padStart(8, '0').toUpperCase();
+    } else if (currentFormat.bits === 64) {
+      const highBits = parseInt(bits.substring(0, 32), 2);
+      const lowBits = parseInt(bits.substring(32), 2);
+      return '0x' + highBits.toString(16).padStart(8, '0').toUpperCase() + 
+             lowBits.toString(16).padStart(8, '0').toUpperCase();
+    } else {
+      const hexDigits = Math.ceil(currentFormat.bits / 4);
+      return '0x' + decimalValue.toString(16).padStart(hexDigits, '0').toUpperCase();
+    }
+  };
+
+  // 从十六进制转换为浮点数
+  const handleHexChange = (hexStr: string) => {
+    setHexInput(hexStr);
+    const trimmed = hexStr.trim();
+    
+    if (trimmed === '') {
+      setValue(0);
+      return;
+    }
+    
+    try {
+      const cleanHex = trimmed.replace(/^0x/i, '');
+      if (/^[0-9A-Fa-f]+$/.test(cleanHex)) {
+        let binaryStr = '';
+        let decimalValue = parseInt(cleanHex, 16);
+        
+        if (currentFormat.bits === 32) {
+          binaryStr = decimalValue.toString(2).padStart(32, '0');
+        } else if (currentFormat.bits === 64) {
+          binaryStr = decimalValue.toString(2).padStart(64, '0');
+        } else {
+          const hexDigits = Math.ceil(currentFormat.bits / 4);
+          decimalValue = parseInt(cleanHex.substring(0, hexDigits), 16);
+          binaryStr = decimalValue.toString(2).padStart(currentFormat.bits, '0');
+        }
+        
+        if (binaryStr.length > 0) {
+          const newSign = binaryStr.substring(0, currentFormat.signBits);
+          const newExp = binaryStr.substring(currentFormat.signBits, currentFormat.signBits + currentFormat.exponentBits);
+          const newMantissa = binaryStr.substring(currentFormat.signBits + currentFormat.exponentBits);
+          const newValue = buildFloatFromBits(newSign, newExp, newMantissa, currentFormat);
+          setValue(newValue);
+        }
+      }
+    } catch (e) {
+      // 无效的十六进制输入，忽略
+    }
+  };
 
   // 更新位表示
   useEffect(() => {
@@ -22,17 +81,43 @@ export default function FloatToyPage() {
     setMantissa(result.mantissa);
     setBits(result.bits);
     setParsed(result);
+    // 更新十六进制输入框
+    setHexInput(getHexRepresentation());
+    // 只有当不是用户输入时才更新decimalInput（避免循环更新）
+    if (!isNaN(value)) {
+      setDecimalInput(formatValue(value));
+    }
   }, [value, currentFormat]);
 
   // 处理数值输入
   const handleValueChange = (newValue: string) => {
-    const num = parseFloat(newValue);
-    if (!isNaN(num) && isFinite(num)) {
-      setValue(num);
-    } else if (newValue === 'inf' || newValue === '+inf' || newValue === '-inf') {
-      setValue(newValue === '-inf' ? -Infinity : Infinity);
-    } else if (newValue === 'nan') {
+    setDecimalInput(newValue);
+    
+    const trimmed = newValue.trim().toLowerCase();
+    
+    // 处理特殊值
+    if (trimmed === 'inf' || trimmed === '+inf') {
+      setValue(Infinity);
+      return;
+    }
+    if (trimmed === '-inf') {
+      setValue(-Infinity);
+      return;
+    }
+    if (trimmed === 'nan') {
       setValue(NaN);
+      return;
+    }
+    
+    // 处理空字符串
+    if (trimmed === '') {
+      setValue(0);
+      return;
+    }
+    
+    const num = parseFloat(newValue);
+    if (!isNaN(num)) {
+      setValue(num);
     }
   };
 
@@ -62,22 +147,6 @@ export default function FloatToyPage() {
       return val.toExponential(4);
     }
     return val.toPrecision(8);
-  };
-
-  // 获取数值的十六进制表示
-  const getHexRepresentation = (): string => {
-    const decimalValue = parseInt(bits, 2);
-    if (currentFormat.bits === 32) {
-      return '0x' + decimalValue.toString(16).padStart(8, '0').toUpperCase();
-    } else if (currentFormat.bits === 64) {
-      const highBits = parseInt(bits.substring(0, 32), 2);
-      const lowBits = parseInt(bits.substring(32), 2);
-      return '0x' + highBits.toString(16).padStart(8, '0').toUpperCase() + 
-             lowBits.toString(16).padStart(8, '0').toUpperCase();
-    } else {
-      const hexDigits = Math.ceil(currentFormat.bits / 4);
-      return '0x' + decimalValue.toString(16).padStart(hexDigits, '0').toUpperCase();
-    }
   };
 
   const formatInfo = getFormatInfo(currentFormat);
@@ -139,14 +208,18 @@ export default function FloatToyPage() {
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
-                  value={formatValue(value)}
+                  value={decimalInput}
                   onChange={(e) => handleValueChange(e.target.value)}
                   className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs md:text-sm font-mono focus:outline-none focus:border-blue-500"
                   placeholder="输入数值"
                 />
-                <div className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs md:text-sm font-mono text-center flex items-center justify-center">
-                  {getHexRepresentation()}
-                </div>
+                <input
+                  type="text"
+                  value={hexInput}
+                  onChange={(e) => handleHexChange(e.target.value)}
+                  className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs md:text-sm font-mono focus:outline-none focus:border-blue-500"
+                  placeholder="十六进制"
+                />
               </div>
             </div>
           </div>
@@ -193,6 +266,7 @@ export default function FloatToyPage() {
                   <div className="flex items-center gap-0.5">
                     <div className="w-1 h-1 rounded-full bg-blue-500"></div>
                     <span className="text-[10px] text-slate-400 font-medium">指数</span>
+                    <span className="text-[8px] text-slate-600">偏置:{currentFormat.exponentBias}</span>
                   </div>
                   <div className="flex gap-0.5">
                     {exponent.split('').map((bit, i) => (
