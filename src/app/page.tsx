@@ -496,19 +496,22 @@ export default function FloatToyPage() {
               </div>
             </div>
 
-            {/* 数学公式 - 更紧凑 */}
-            {parsed && parsed.isNormalized && (
+            {/* 数学公式和换算过程 - 规格化数、非规格化数和零都显示 */}
+            {parsed && (parsed.isNormalized || parsed.isDenormalized || parsed.isZero) && (
               <>
+                {/* 数学表示 - 区分规格化数和非规格化数 */}
                 <div className="bg-slate-900/50 rounded-lg p-2 mb-3 shrink-0">
                   <div className="text-[10px] text-slate-400 mb-1 font-medium">数学表示</div>
                   <div className="text-xs md:text-sm font-mono text-center whitespace-nowrap">
                     <span className="text-red-400 font-bold">{sign === '0' ? '+' : '-'}</span>
-                    <span className="mx-1 text-slate-300">1.</span>
+                    <span className="mx-1 text-slate-300">{parsed.isDenormalized ? '0.' : '1.'}</span>
                     <span className="text-green-400">{mantissa}</span>
                     <span className="mx-1 text-slate-400">×</span>
                     <span className="text-blue-400">2^</span>
                     <span className="text-blue-300 text-[10px] md:text-xs">
-                      {sign === '0' ? '' : '-'}{parsed.exponentValue - currentFormat.exponentBias}
+                      {parsed.isDenormalized
+                        ? `${sign === '0' ? '' : '-'}${1 - currentFormat.exponentBias}`
+                        : `${sign === '0' ? '' : '-'}${parsed.exponentValue - currentFormat.exponentBias}`}
                     </span>
                   </div>
                 </div>
@@ -562,15 +565,23 @@ export default function FloatToyPage() {
                     </span>
                   </div>
 
-                  {/* 最终结果 */}
+                  {/* 最终结果 - 区分规格化数和非规格化数 */}
                   <div className="pt-2 border-t border-slate-700 shrink-0">
-                    <div className="text-slate-400 text-center mb-1 text-[10px] md:text-xs">结果 = (-1)^s × (1 + f) × 2^(e-bias)</div>
+                    <div className="text-slate-400 text-center mb-1 text-[10px] md:text-xs">
+                      {parsed.isDenormalized
+                        ? '结果 = (-1)^s × f × 2^(1-bias)'
+                        : '结果 = (-1)^s × (1 + f) × 2^(e-bias)'}
+                    </div>
                     <div className="text-center text-xs md:text-sm">
                       <span className="text-red-400">{sign === '0' ? '+' : '-'}</span>
-                      <span>1.{mantissa}</span>
+                      <span>{parsed.isDenormalized ? '0.' : '1.'}{mantissa}</span>
                       <span className="text-slate-500 text-[10px]">[2]</span>
                       <span> × 2^</span>
-                      <span className="text-blue-300 text-[10px] md:text-xs">{parsed.exponentValue - currentFormat.exponentBias}</span>
+                      <span className="text-blue-300 text-[10px] md:text-xs">
+                        {parsed.isDenormalized
+                          ? `${sign === '0' ? '' : '-'}${1 - currentFormat.exponentBias}`
+                          : `${sign === '0' ? '' : '-'}${parsed.exponentValue - currentFormat.exponentBias}`}
+                      </span>
                       <span> = </span>
                       <span className="text-white font-bold">{formatValue(value)}</span>
                     </div>
@@ -579,15 +590,13 @@ export default function FloatToyPage() {
               </>
             )}
 
-            {/* 特殊值提示 - 更紧凑 */}
-            {parsed && !parsed.isNormalized && (
+            {/* 特殊值提示 - 只显示无穷大和NaN */}
+            {parsed && (parsed.isInfinity || parsed.isNaN) && (
               <div className="bg-slate-900/50 rounded-lg p-2 text-xs md:text-sm">
                 <div className="text-slate-400 mb-1 font-medium">特殊值</div>
                 <div className="text-center text-xs md:text-sm">
-                  {parsed.isZero && <span className="text-slate-300">零 (Zero)</span>}
                   {parsed.isInfinity && <span className="text-orange-400">无穷大 (Infinity)</span>}
                   {parsed.isNaN && <span className="text-red-400">非数字 (NaN)</span>}
-                  {parsed.isDenormalized && <span className="text-yellow-400">非规格化数 (Denormalized)</span>}
                 </div>
               </div>
             )}
