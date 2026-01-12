@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FLOAT_FORMATS, parseFloatToBits, buildFloatFromBits, getFormatInfo, type FloatFormat } from '@/lib/float-utils';
 
 export default function FloatToyPage() {
@@ -17,21 +17,32 @@ export default function FloatToyPage() {
   const [hexInput, setHexInput] = useState('');
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [preserveDecimalInput, setPreserveDecimalInput] = useState(false);
+  const isFormatSwitchingRef = useRef(false);
+  
+  // 使用 ref 存储最新的 value 和 format，避免闭包问题
+  const valueRef = useRef(value);
+  const formatRef = useRef(format);
+  
+  // 更新 ref
+  useEffect(() => {
+    valueRef.current = value;
+    formatRef.current = format;
+  }, [value, format]);
 
   const currentFormat = FLOAT_FORMATS[format];
 
-  // 获取数值的十六进制表示
-  const getHexRepresentation = (): string => {
-    const decimalValue = parseInt(bits, 2);
-    if (currentFormat.bits === 32) {
+  // 获取数值的十六进制表示（纯函数）
+  const getHexRepresentation = (bitsValue: string, bitsCount: number): string => {
+    const decimalValue = parseInt(bitsValue, 2);
+    if (bitsCount === 32) {
       return '0x' + decimalValue.toString(16).padStart(8, '0').toUpperCase();
-    } else if (currentFormat.bits === 64) {
-      const highBits = parseInt(bits.substring(0, 32), 2);
-      const lowBits = parseInt(bits.substring(32), 2);
+    } else if (bitsCount === 64) {
+      const highBits = parseInt(bitsValue.substring(0, 32), 2);
+      const lowBits = parseInt(bitsValue.substring(32), 2);
       return '0x' + highBits.toString(16).padStart(8, '0').toUpperCase() + 
              lowBits.toString(16).padStart(8, '0').toUpperCase();
     } else {
-      const hexDigits = Math.ceil(currentFormat.bits / 4);
+      const hexDigits = Math.ceil(bitsCount / 4);
       return '0x' + decimalValue.toString(16).padStart(hexDigits, '0').toUpperCase();
     }
   };
@@ -86,6 +97,12 @@ export default function FloatToyPage() {
 
   // 处理十六进制输入框失去焦点
   const handleHexBlur = () => {
+    // 如果正在切换格式，不执行转换
+    if (isFormatSwitchingRef.current) return;
+    
+    // 如果用户正在输入，不执行转换
+    if (!isUserTyping) return;
+
     const trimmed = hexInput.trim();
     
     if (trimmed === '') {
@@ -132,10 +149,11 @@ export default function FloatToyPage() {
     setMantissa(result.mantissa);
     setBits(result.bits);
     setParsed(result);
-    // 更新十六进制输入框
-    setHexInput(getHexRepresentation());
-    // 只有当不是用户输入且不需要保留时才更新decimalInput（避免覆盖用户输入）
-    if (!isUserTyping && !preserveDecimalInput && !isNaN(value)) {
+    // 更新十六进制输入框（使用新计算的 bits）
+    setHexInput(getHexRepresentation(result.bits, currentFormat.bits));
+    // 如果正在切换格式（isFormatSwitchingRef 为 true），强制更新 decimalInput
+    // 否则，只有当不是用户输入且不需要保留时才更新decimalInput（避免覆盖用户输入）
+    if (isFormatSwitchingRef.current || (!isUserTyping && !preserveDecimalInput && !isNaN(value))) {
       setDecimalInput(formatValue(value));
     }
   }, [value, currentFormat, isUserTyping, preserveDecimalInput]);
@@ -149,9 +167,40 @@ export default function FloatToyPage() {
 
   // 处理格式切换
   const handleFormatChange = (newFormat: keyof typeof FLOAT_FORMATS) => {
+    isFormatSwitchingRef.current = true; // 设置格式切换标志，防止失焦时触发转换
+
+    // 先重置标志，确保更新能够生效
+    setIsUserTyping(false);
+    setPreserveDecimalInput(false);
+
+    // 获取当前格式的位表示
+    const currentParsed = parsed || parseFloatToBits(value, currentFormat);
+
+    // 将当前位表示转换为新格式的浮点数值
+    // 关键：用当前格式的位表示，直接转换为新格式的位，然后用新格式解析
+    const newFormatConfig = FLOAT_FORMATS[newFormat];
+
+    // 直接从当前 value 转换到新格式，让 parseFloatToBits 处理精度转换
+    const newValueInNewFormat = parseFloatToBits(value, newFormatConfig);
+
+    // 用新格式的位表示构建数值
+    const newValue = buildFloatFromBits(
+      newValueInNewFormat.sign,
+      newValueInNewFormat.exponent,
+      newValueInNewFormat.mantissa,
+      newFormatConfig
+    );
+
+    // 设置 format，触发 useEffect
     setFormat(newFormat);
-    setIsUserTyping(false); // 重置用户输入标志
-    setPreserveDecimalInput(false); // 重置保留标志，允许更新输入框
+
+    // 同时设置 value，确保 useEffect 能够使用正确的值
+    setValue(newValue);
+
+    // 延迟清除格式切换标志，确保 useEffect 执行完成
+    setTimeout(() => {
+      isFormatSwitchingRef.current = false;
+    }, 150);
   };
 
   // 处理快速操作按钮点击
@@ -204,6 +253,9 @@ export default function FloatToyPage() {
 
   // 处理十进制输入框失去焦点
   const handleDecimalBlur = () => {
+    // 如果正在切换格式，不执行转换
+    if (isFormatSwitchingRef.current) return;
+
     // 失去焦点时也执行转换
     const trimmed = decimalInput.trim().toLowerCase();
     
