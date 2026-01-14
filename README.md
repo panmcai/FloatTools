@@ -23,7 +23,7 @@ cd FloatVisualizer
 ./scripts/build.sh
 ```
 
-### 部署
+### 本地预览
 
 ```bash
 cd out && python3 -m http.server 5000
