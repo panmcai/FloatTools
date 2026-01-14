@@ -59,7 +59,7 @@ cd out && python3 -m http.server 5000
 
 ## 许可证
 
-Copyright © 2025~2026 Panmcai rights reserved.
+Copyright © 2025~2026 Mingcai Pan rights reserved.
 
 ## 致谢
 
