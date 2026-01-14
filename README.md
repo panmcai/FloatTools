@@ -13,15 +13,6 @@
 - 📱 **响应式设计**: 支持桌面端和移动端
 - 🌓 **深色主题**: 护眼的深色界面设计
 
-## 技术栈
-
-- **框架**: Next.js 16 (App Router)
-- **语言**: TypeScript 5
-- **样式**: Tailwind CSS 4
-- **运行时**: Node.js 24
-
-## 快速开始
-
 ### 本地开发
 
 ```bash
@@ -29,40 +20,19 @@
 git clone https://github.com/panmcai/FloatVisualizer.git
 cd FloatVisualizer
 
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
+./scripts/build.sh
 ```
 
+### 部署
+
+```bash
+cd out && python3 -m http.server 5000
+```
 访问 http://localhost:5000
-
-### Docker 部署
-
-```bash
-# 构建镜像
-docker build -t FloatVisualizer .
-
-# 运行容器
-docker run -d -p 3000:3000 --name FloatVisualizer FloatVisualizer
-```
-
-访问 http://localhost:3000
-
-### 使用 Docker Compose
-
-```bash
-# 启动服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-```
 
 ## 在线预览
 
-- [Demo 链接] (待部署)
+- [FloatVisualizer 链接] (http://localhost:5000)
 
 ## 使用说明
 
@@ -71,17 +41,6 @@ docker-compose logs -f
 3. **查看位表示**: 可视化展示符号位（红色）、指数位（蓝色）、尾数位（绿色）
 4. **交互操作**: 点击任意位可切换 0/1，实时计算对应数值
 5. **查看换算过程**: 详细的数学换算步骤说明
-
-## 部署方式
-
-详细部署文档请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)
-
-### 推荐部署方式
-
-- **Vercel**: 最简单，一键部署
-- **GitHub Actions + Docker**: 自动化 CI/CD 流程
-- **Docker**: 容器化部署
-- **传统服务器**: 使用 PM2 + Nginx
 
 ## 项目结构
 
@@ -102,45 +61,15 @@ docker-compose logs -f
 └── README.md                 # 项目说明
 ```
 
-## 开发
-
-```bash
-# 安装依赖
-npm install
-
-# 开发模式
-npm run dev
-
-# 构建
-npm run build
-
-# 生产模式
-npm start
-
-# 代码检查
-npm run lint
-```
-
-## 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 提交 Pull Request
-
 ## 许可证
 
-MIT License
+Copyright © 2025~2026 Panmcai rights reserved.
 
 ## 致谢
 
 - IEEE 754 标准规范
 - Next.js 框架
 - Tailwind CSS
-
 ---
 
 Made with ❤️ by panmcai
