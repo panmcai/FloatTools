@@ -30,10 +30,6 @@ cd out && python3 -m http.server 5000
 ```
 访问 http://localhost:5000
 
-## 在线预览
-
-- [FloatVisualizer 链接] (http://localhost:5000)
-
 ## 使用说明
 
 1. **选择格式**: 点击顶部的格式按钮切换浮点数格式
