@@ -29,6 +29,7 @@ export default function FloatToyPage() {
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [preserveDecimalInput, setPreserveDecimalInput] = useState(false);
   const isFormatSwitchingRef = useRef(false);
+  const isHexConversionRef = useRef(false); // 标记是否是十六进制转换
 
   // 使用 ref 存储最新的 value 和 format，避免闭包问题
   const valueRef = useRef(value);
@@ -78,76 +79,23 @@ export default function FloatToyPage() {
     }
   };
 
-  // 从十六进制转换为浮点数
-  const handleHexChange = (hexStr: string) => {
-    setHexInput(hexStr);
-    setIsUserTyping(true);
-  };
+  // 从十六进制转换为浮点数 - 通用转换逻辑
+  const applyHexConversion = (hexValue?: string) => {
+    const trimmed = (hexValue !== undefined ? hexValue : hexInput).trim();
 
-  // 处理十六进制输入框回车键
-  const handleHexKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const trimmed = hexInput.trim();
-      
-      if (trimmed === '') {
-        setValue(0);
-        setIsUserTyping(false);
-        return;
-      }
-      
-      try {
-        const cleanHex = trimmed.replace(/^0x/i, '');
-        if (/^[0-9A-Fa-f]+$/.test(cleanHex)) {
-          let binaryStr = '';
-          let decimalValue = parseInt(cleanHex, 16);
-          
-          if (currentFormat.bits === 32) {
-            binaryStr = decimalValue.toString(2).padStart(32, '0');
-          } else if (currentFormat.bits === 64) {
-            binaryStr = decimalValue.toString(2).padStart(64, '0');
-          } else {
-            const hexDigits = Math.ceil(currentFormat.bits / 4);
-            decimalValue = parseInt(cleanHex.substring(0, hexDigits), 16);
-            binaryStr = decimalValue.toString(2).padStart(currentFormat.bits, '0');
-          }
-          
-          if (binaryStr.length > 0) {
-            const newSign = binaryStr.substring(0, currentFormat.signBits);
-            const newExp = binaryStr.substring(currentFormat.signBits, currentFormat.signBits + currentFormat.exponentBits);
-            const newMantissa = binaryStr.substring(currentFormat.signBits + currentFormat.exponentBits);
-            const newValue = buildFloatFromBits(newSign, newExp, newMantissa, currentFormat);
-            setValue(newValue);
-            setIsUserTyping(false);
-          }
-        }
-      } catch (e) {
-        // 无效的十六进制输入，忽略
-      }
-    }
-  };
-
-  // 处理十六进制输入框失去焦点
-  const handleHexBlur = () => {
-    // 如果正在切换格式，不执行转换
-    if (isFormatSwitchingRef.current) return;
-    
-    // 如果用户正在输入，不执行转换
-    if (!isUserTyping) return;
-
-    const trimmed = hexInput.trim();
-    
     if (trimmed === '') {
       setValue(0);
       setIsUserTyping(false);
-      return;
+      isHexConversionRef.current = true;
+      return true;
     }
-    
+
     try {
       const cleanHex = trimmed.replace(/^0x/i, '');
       if (/^[0-9A-Fa-f]+$/.test(cleanHex)) {
         let binaryStr = '';
         let decimalValue = parseInt(cleanHex, 16);
-        
+
         if (currentFormat.bits === 32) {
           binaryStr = decimalValue.toString(2).padStart(32, '0');
         } else if (currentFormat.bits === 64) {
@@ -157,7 +105,7 @@ export default function FloatToyPage() {
           decimalValue = parseInt(cleanHex.substring(0, hexDigits), 16);
           binaryStr = decimalValue.toString(2).padStart(currentFormat.bits, '0');
         }
-        
+
         if (binaryStr.length > 0) {
           const newSign = binaryStr.substring(0, currentFormat.signBits);
           const newExp = binaryStr.substring(currentFormat.signBits, currentFormat.signBits + currentFormat.exponentBits);
@@ -165,11 +113,56 @@ export default function FloatToyPage() {
           const newValue = buildFloatFromBits(newSign, newExp, newMantissa, currentFormat);
           setValue(newValue);
           setIsUserTyping(false);
+          isHexConversionRef.current = true; // 标记为十六进制转换
+          return true;
         }
       }
     } catch (e) {
       // 无效的十六进制输入，忽略
     }
+    return false;
+  };
+
+  // 从十六进制转换为浮点数
+  const handleHexChange = (hexStr: string) => {
+    setHexInput(hexStr);
+    setIsUserTyping(true);
+  };
+
+  // 处理十六进制输入框回车键
+  const handleHexKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      applyHexConversion();
+    }
+  };
+
+  // 处理十六进制输入框失去焦点
+  const handleHexBlur = () => {
+    // 如果正在切换格式，不执行转换
+    if (isFormatSwitchingRef.current) return;
+
+    // 如果用户正在输入，不执行转换
+    if (!isUserTyping) return;
+
+    applyHexConversion();
+  };
+
+  // 处理十六进制输入框粘贴
+  const handleHexPaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    // 阻止默认粘贴行为
+    e.preventDefault();
+
+    // 直接从剪贴板获取文本
+    const pastedText = e.clipboardData.getData('text');
+    if (!pastedText) return;
+
+    // 清理并设置值
+    const trimmed = pastedText.trim();
+    setHexInput(trimmed);
+    setIsUserTyping(true);
+
+    // 直接传入值进行转换，不依赖状态更新
+    applyHexConversion(trimmed);
   };
 
   // 更新位表示
@@ -182,9 +175,15 @@ export default function FloatToyPage() {
     setParsed(result);
     // 更新十六进制输入框（使用新计算的 bits）
     setHexInput(getHexRepresentation(result.bits, currentFormat.bits));
+
+    // 如果是十六进制转换，强制更新 decimalInput
+    if (isHexConversionRef.current) {
+      setDecimalInput(formatValue(value));
+      isHexConversionRef.current = false; // 清除标记
+    }
     // 如果正在切换格式（isFormatSwitchingRef 为 true），强制更新 decimalInput
     // 否则，只有当不是用户输入且不需要保留时才更新decimalInput（避免覆盖用户输入）
-    if (isFormatSwitchingRef.current || (!isUserTyping && !preserveDecimalInput && !isNaN(value))) {
+    else if (isFormatSwitchingRef.current || (!isUserTyping && !preserveDecimalInput && !isNaN(value))) {
       setDecimalInput(formatValue(value));
     }
   }, [value, currentFormat, isUserTyping, preserveDecimalInput]);
@@ -451,8 +450,9 @@ export default function FloatToyPage() {
                   onChange={(e) => handleHexChange(e.target.value)}
                   onKeyDown={handleHexKeyDown}
                   onBlur={handleHexBlur}
+                  onPaste={handleHexPaste}
                   className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs md:text-sm font-mono focus:outline-none focus:border-blue-500"
-                  placeholder="十六进制 (按回车转换)"
+                  placeholder="十六进制 (粘贴或回车转换)"
                 />
               </div>
             </div>
@@ -825,6 +825,26 @@ export default function FloatToyPage() {
                     <div className="flex justify-between">
                       <span className="text-slate-500">尾数值:</span>
                       <span className="text-green-400">{parsed.mantissaValue}</span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-slate-500">十六进制:</span>
+                      <span className="text-purple-400 font-mono text-[10px] cursor-pointer hover:text-purple-300"
+                            onClick={() => {
+                              navigator.clipboard.writeText(hexInput);
+                            }}
+                            title="点击复制">
+                        {hexInput || '-'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-start">
+                      <span className="text-slate-500">二进制:</span>
+                      <span className="text-slate-300 font-mono text-[9px] cursor-pointer hover:text-slate-200"
+                            onClick={() => {
+                              navigator.clipboard.writeText(bits);
+                            }}
+                            title="点击复制">
+                        {bits.substring(0, 20)}{bits.length > 20 ? '...' : ''}
+                      </span>
                     </div>
                   </>
                 )}
