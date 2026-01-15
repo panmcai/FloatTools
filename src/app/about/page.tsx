@@ -11,11 +11,13 @@ export default function AboutPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 读取 markdown 文件
-    fetch('/about.md')
+    // 读取 markdown 文件，使用 basePath
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    const mdPath = `${basePath}/about.md`;
+    fetch(mdPath)
       .then((res) => {
         if (!res.ok) {
-          throw new Error('Failed to load about.md');
+          throw new Error(`Failed to load about.md from ${mdPath}`);
         }
         return res.text();
       })
@@ -24,6 +26,7 @@ export default function AboutPage() {
         setLoading(false);
       })
       .catch((err) => {
+        console.error('Error loading about.md:', err);
         setError(err.message);
         setLoading(false);
       });
