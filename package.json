@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cp src/content/about.md public/about.md && next dev -p 5000",
-    "build": "cp src/content/about.md public/about.md && next build",
+    "dev": "mkdir public && cp src/content/*.md public/ && next dev -p 5000",
+    "build": "mkdir public && cp src/content/*.md public/ && next build",
     "start": "next start",
     "lint": "eslint"
   },
