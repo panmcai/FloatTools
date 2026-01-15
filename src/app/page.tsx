@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { FLOAT_FORMATS, parseFloatToBits, buildFloatFromBits, getFormatInfo, type FloatFormat } from '@/lib/float-utils';
 
 export default function FloatToyPage() {
@@ -403,8 +404,16 @@ export default function FloatToyPage() {
             </h1>
             <p className="text-slate-400 text-xs md:text-sm mt-0.5">IEEE 754 + 扩展格式</p>
           </div>
-          <div className="text-xs md:text-sm text-slate-500 hidden sm:block font-medium">
-            {currentFormat.name}
+          <div className="flex items-center gap-4">
+            <div className="text-xs md:text-sm text-slate-500 hidden sm:block font-medium">
+              {currentFormat.name}
+            </div>
+            <Link
+              href="/about"
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs md:text-sm font-medium transition-all border border-slate-700 text-slate-300 hover:text-white"
+            >
+              关于
+            </Link>
           </div>
         </div>
 
