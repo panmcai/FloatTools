@@ -66,8 +66,8 @@
 
 如有问题或建议，欢迎通过以下方式联系：
 
-- GitHub Issues
 - Email: panmcai@foxmail.com
+- 更多实用工具可以访问[Peter·Pan的主页](https://peter.panmcai.dpdns.org/)获取
 
 ---
 
